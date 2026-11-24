@@ -1,0 +1,18 @@
+# Downloaded nand2tetris platform and local course materials
+nand2tetris/
+*.pdf
+*.zip
+*.ppsx
+
+# Generated simulator/compiler output
+*.hack
+*.out
+*.xml
+*.xml.expect
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Editor settings
+.vscode/

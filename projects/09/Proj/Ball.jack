@@ -1,0 +1,195 @@
+/*
+Ball class that stores and renders the ball for the game. It also checks for screen and paddle collision
+*/
+
+class Ball {
+    field int x;
+    field int y;
+    field int r;
+    field int speed;
+    field int screenWidth;
+    field int screenHeight;
+    field int dirX; // + means right, - means left
+    field int dirY; // + means down, - means up
+    field boolean hitBottom;
+    field int score;
+
+    constructor Ball new(int x0, int y0, int radius, int spd, int screenW, int screenH) {
+        let x = x0;
+        let y = y0;
+        let r = radius;
+        let speed = spd;
+        let screenWidth = screenW;
+        let screenHeight = screenH;
+        let dirX = 1;
+        let dirY = -1;
+        let hitBottom = false;
+        let score = 0;
+        return this;
+    }
+
+    method void draw() {
+        do Screen.drawCircle(x, y, r);
+        return;
+    }
+
+    method int touchWall() {
+        /*
+        This function returns a number for which wall that it is currently touching
+        If it is not touching a wall then return 0
+        1: Top Wall
+        2: Right Wall
+        3: Bottom Wall
+        4: Left Wall
+        */
+        var int wallNum;
+        var int screenBoundsX;
+        var int screenBoundsY;
+
+        let wallNum = 0;
+        let screenBoundsX = screenWidth - 2;
+        let screenBoundsY = screenHeight - 2;
+        if (y - r < 2) {
+            let wallNum = 1;
+        }
+        if (x + r > screenBoundsX) {
+            let wallNum = 2;
+        }
+        if (y + r > screenBoundsY) {
+            let wallNum = 3;
+        }
+        if (x - r < 2) {
+            let wallNum = 4;
+        }
+
+        return wallNum;
+    }
+
+    method void move(Paddle p){
+        /*
+        Move the ball in its current direction
+        and bounce off walls if it hits them will return true if it hits the bottom wall
+        */
+        // Didn't realize this, but variables must be declared first
+        var int stepX;
+        var int stepY;
+        var int wallHit;
+        var boolean hit;
+
+        do Screen.setColor(false);
+        do draw();
+        do Screen.setColor(true);
+
+        let hit = false;
+
+        let stepX = dirX * speed;
+        let stepY = dirY * speed;
+
+        let x = x + stepX;
+        let y = y + stepY;
+        
+        let wallHit = touchWall();
+
+        if (wallHit = 1) { // Top Wall
+            let dirY = 1;
+            let y = 2 + r;
+        }
+        if (wallHit = 2) { // Right Wall
+            let dirX = -1;
+            let x = screenWidth - 2 - r;
+        }
+        if (wallHit = 4) { // Left Wall
+            let dirX = 1;
+            let x = 2 + r;
+        }
+        if (wallHit = 3) { // Bottom Wall
+            let hitBottom = true;
+            let dirY = -1;
+            let y = screenHeight - 2 - r;
+        }
+        let hit = hitPaddle(p);
+        if (hit) {
+            let dirY = -1;
+            do p.reduceWidth(2);
+        }
+        
+        do p.draw();
+        do draw();
+
+        return;
+    }
+
+    method void changeSpeed(int newSpeed) {
+        /*
+        Change the speed of the ball to newSpeed
+        */
+        if (newSpeed > 0){
+            let speed = newSpeed;
+        }
+        return;
+
+    }
+
+    method boolean hitPaddle(Paddle p) {
+        /*
+        Check if ball b hit paddle p
+        */
+        var boolean hit;
+        var int ballLeft, ballRight, ballTop, ballBottom;
+        var int paddleLeft, paddleRight, paddleTop, paddleBottom;
+
+        let hit = false;
+
+        // Set up the ball's bounding box
+        let ballLeft = x - r;
+        let ballRight = x + r;
+        let ballTop = y - r;
+        let ballBottom = y + r;
+
+        // Set up the paddle's bounding box
+        let paddleLeft = p.getX();
+        let paddleRight = p.getX() + p.getW();
+        let paddleTop = p.getY();
+        let paddleBottom = p.getY() + p.getH();
+
+        // Within range of the paddle?
+        if (paddleLeft - 1 < ballRight) {
+            if (paddleRight + 1 > ballLeft) {
+                if (paddleTop < ballBottom) {
+                    if (paddleBottom > ballTop) {
+                        let hit = true;
+                        let score = score + 1;
+                    }
+                }
+            }
+        }
+
+        return hit;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method int getR() {
+        return r;
+    }
+
+    method boolean hasHitBottom() {
+        return hitBottom;
+    }
+
+    method int getScore() {
+        return score;
+    }
+
+    // Nescessary Method for eliminating ball from Memory
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+}

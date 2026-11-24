@@ -1,0 +1,82 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/CPU.hdl
+/**
+ * The Hack Central Processing unit (CPU).
+ * Parses the binary code in the instruction input and executes it according to the
+ * Hack machine language specification. In the case of a C-instruction, computes the
+ * function specified by the instruction. If the instruction specifies to read a memory
+ * value, the inM input is expected to contain this value. If the instruction specifies
+ * to write a value to the memory, sets the outM output to this value, sets the addressM
+ * output to the target address, and asserts the writeM output (when writeM = 0, any
+ * value may appear in outM).
+ * If the reset input is 0, computes the address of the next instruction and sets the
+ * pc output to that value. If the reset input is 1, sets pc to 0.
+ * Note: The outM and writeM outputs are combinational: they are affected by the
+ * instruction's execution during the current cycle. The addressM and pc outputs are
+ * clocked: although they are affected by the instruction's execution, they commit to
+ * their new values only in the next cycle.
+ */
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+	//// Replace this comment with your code.
+    // A or C instruction
+    Not(in=instruction[15], out=aInst);
+
+    // D Register logic
+    And(a=instruction[4], b=instruction[15], out=loadD); // Do we write to the D reg? Check if C instruction and if ddd = 010
+    DRegister(in=internalALUOut, load=loadD, out=dReg);
+
+    // A Register logic
+    And(a=instruction[5], b=instruction[15], out=loadAfromALU); // Do we write to the A reg? Check if C instruction and if ddd = 100
+    Or(a=aInst, b=loadAfromALU, out=loadA);                     // Unlock the A reg if we need to write to it from the ALU or the instruction
+    Mux16(a=instruction, b=internalALUOut, sel=loadAfromALU, out=toAReg); // Switch to ALU output if the instruction says so
+    ARegister(in=toAReg, load=loadA, out=aReg, out[0..14]=addressM);
+
+    // Addressing Memory logic
+    Mux16(a=aReg, b=inM, sel=instruction[12], out=toALU); // Do we use A reg, or Memory? Determined by a of the instruction 1xxaccccccdddjjj
+    And(a=instruction[3], b=instruction[15], out=writeM); // Do we write to the memory? Check if C instruction and if ddd = 001
+
+    // Program Counter logic
+    Not(in=unlockPC, out=increment); // If we aren't loading something into the pc we should just increment it
+    PC(in=aReg, load=unlockPC, inc=increment, reset=reset, out[0..14]=pc);
+
+    // ALU
+    ALU(x=dReg, y=toALU, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outM, out=internalALUOut, zr=zr, ng=ng);
+
+    // Perform all the jump logic and then mux it together to determine what to do deteremined by j of the instruction 1xxaccccccdddjjj
+    Not(in=zr, out=invZR);
+    Not(in=ng, out=invNG);
+    
+    // No jump command selected should aways be false
+    And(a=invZR, b=invNG, out=JGT); // Checking JGT command
+    // JEQ is just if zr=1 so no additional logic needed
+    Or(a=zr, b=invNG, out=JGE);// Checking JGE command
+    // JLT is just if ng=1 so no additional logic needed
+    // JNE is just if zr=0 so no additional logic needed
+    Or(a=zr, b=ng, out=JLE); // Checking JLE command
+    // JMP is unconditional so it should always be true
+
+    // Mux everthing together using the instruction bits to determine which one to select
+    Mux(a=false, b=JGT,   sel=instruction[0], out=to2Mux1);
+    Mux(a=zr,    b=JGE,   sel=instruction[0], out=to2Mux2);
+    Mux(a=ng,    b=invZR, sel=instruction[0], out=to2Mux3);
+    Mux(a=JLE,   b=true,  sel=instruction[0], out=to2Mux4);
+    Mux(a=to2Mux1, b=to2Mux2, sel=instruction[1], out=to3Mux1);
+    Mux(a=to2Mux3, b=to2Mux4, sel=instruction[1], out=to3Mux2);
+    Mux(a=to3Mux1, b=to3Mux2, sel=instruction[2], out=toCheckIfCInst);
+    And(a=toCheckIfCInst, b=instruction[15], out=unlockPC); // Also make sure that we are using a C instruction
+}

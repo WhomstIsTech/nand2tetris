@@ -1,0 +1,96 @@
+// Main code runner for our Project
+
+class Main {
+    function void main() {
+        //Stores paddle class
+        var Paddle paddle;
+        //Stores ball class
+        var Ball ball;
+        //Stores scorecard class
+        var Scorecard scorecard;
+
+        var int score;
+
+        //Stores screenheight variable
+        var int screenWidth, screenHeight;
+        //Store game over being true or false
+        var boolean gamePlaying;
+        //Stores current key pressed on keyboard
+        var int key;
+        //Used later for ball position
+        var int screenCyleCount;
+        //Initializes screen size for Jack 512x256 pixels
+        let screenWidth = 512;
+        let screenHeight = 256;
+        let screenCyleCount = 0;
+        // Game over flag is set to false for the start of the game
+        let gamePlaying = true;
+        let score = 0;
+        //New paddle object is created with starting x and y coordinates
+        //screenWidth/2 shifts left edge of paddle to the center and -25 shifts middle of paddle to the center
+        //screenHeight - 20 shifts paddle 20 pixels above bottom of screen
+        //Height of paddle is 5 pixels and width is 50
+        let paddle = Paddle.new(screenWidth / 2 - 25, screenHeight - 20, 50, 5);
+        //Starts ball object at the center of the screen
+        //Moves two pixels right and two pixels down each frame
+        //Total screen size is taken into account so ball knows screen dimensions
+        let ball = Ball.new(screenWidth / 2, screenHeight / 2, 4, 2, screenWidth, screenHeight);
+
+        //Clears screen at beginning of new game
+        do Screen.clearScreen();
+
+        let scorecard = Scorecard.new(22,1);
+
+        //Draws paddle
+        do paddle.draw();
+        //Draws ball
+        do ball.draw();
+        
+        // Wait for user to press a key
+        let key = Keyboard.keyPressed();
+        while (key = 0) {
+            let key = Keyboard.keyPressed();
+            do Sys.wait(1);
+        }
+
+        //Main game loop
+        //Runs as long as game over is not true
+        while (gamePlaying) {
+            //Reads current key being pressed
+            let key = Keyboard.keyPressed();
+            //Move paddle if left or right key is pressed and then moves ball one step
+            if (key = 130) { do paddle.moveLeft(); }  // Left arrow
+            if (key = 132) { do paddle.moveRight(); } // Right arrow
+            //Checks if ball hits the paddle and if it doesnt then game over
+            do ball.move(paddle);
+
+            // Did the ball hit the bottom? If so, the game is over
+            if (ball.hasHitBottom()) {
+                let gamePlaying = false;
+            }
+
+            let score = ball.getScore();
+            do scorecard.update(score);
+
+            //Small delay for game speed otherwise it runs too fast
+            do Sys.wait(5);
+        }
+        //Clear screen
+        do Screen.clearScreen();
+        //Display game over
+        do Output.moveCursor(10, 27);
+        do Output.printString("Game Over");
+
+        // Display the current score
+        do scorecard.updateCursor(11, 27);
+        do scorecard.refresh();
+        do scorecard.update(score);
+        //Wait two seconds and stop the program
+        do Sys.wait(2000);
+        do Sys.halt();
+        // Always need this
+        return;
+    }
+
+    
+}

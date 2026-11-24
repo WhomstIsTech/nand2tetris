@@ -1,0 +1,63 @@
+class Scorecard {
+    field int x;
+    field int y;
+    field int prevScore;
+    field String label;
+
+    constructor Scorecard new(int xPos, int yPos) {
+        let x = xPos;
+        let y = yPos;
+        let prevScore = 0;
+
+        let label = String.new(10);
+        let label = "Score:  ";
+
+        do Output.moveCursor(x, y);
+        do Output.printString(label);
+
+        return this;
+    }
+
+    method void update(int score) {
+        var int tenSpot;
+
+        let tenSpot = score / 10;
+        
+        do Output.backSpace();
+
+        if (tenSpot > 0) {
+            if (prevScore > 9) {
+                do Output.backSpace();
+            }
+        }
+        
+        do Output.printInt(score);
+
+        let prevScore = score;
+
+        return;
+    }
+
+    method void refresh() {
+        if (prevScore > 9) {
+            let label = "Score:   ";
+        }
+        do Output.moveCursor(x, y);
+        do Output.printString(label);
+        
+        return;
+    }
+
+
+    method void updateCursor(int x0, int y0){
+        let x = x0;
+        let y = y0;
+        return;
+    }
+    
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+}
